@@ -1,35 +1,19 @@
-﻿using Shared.Events;
+using System.ComponentModel.DataAnnotations;
 
-namespace OrderService.Models
+namespace OrderService.Models;
+
+public sealed class OrderReadModel
 {
-    public class OrderReadModel
-    {
-        public Guid OrderId { get; set; }
-        public string Status { get; set; } = "Pending";
+    [Key]
+    public Guid OrderId { get; set; }
 
-        // Hàm Replay để tính toán trạng thái hiện tại từ danh sách Sự kiện
-        public void Apply(IEnumerable<object> events)
-        {
-            foreach (var @event in events)
-            {
-                switch (@event)
-                {
-                    case OrderCreatedEvent e:
-                        OrderId = e.OrderId;
-                        Status = "Created - Chờ Inventory xử lý";
-                        break;
-                    case InventoryReservedEvent e:
-                        Status = "Inventory Reserved - Chờ Payment xử lý";
-                        break;
-                    case PaymentProcessedEvent e:
-                        Status = "Completed - HAPPY CASE: Đơn hàng thành công!";
-                        break;
-                    case PaymentFailedEvent e:
-                        // Đây chính là lúc Rollback được ghi nhận
-                        Status = "Cancelled - ROLLBACK CASE: " + e.Reason;
-                        break;
-                }
-            }
-        }
-    }
+    [MaxLength(150)]
+    public required string CustomerId { get; set; }
+
+    public decimal TotalAmount { get; set; }
+
+    [MaxLength(50)]
+    public required string Status { get; set; }
+
+    public DateTime LastUpdatedAt { get; set; }
 }

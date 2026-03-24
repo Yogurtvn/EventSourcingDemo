@@ -1,0 +1,86 @@
+{
+  "version": "0.2.0",
+  "compounds": [
+    {
+      "name": "Run All Services + Gateway",
+      "configurations": [
+        "OrderService",
+        "InventoryService",
+        "PaymentService",
+        "ApiGateway"
+      ],
+      "stopAll": true,
+      "preLaunchTask": "Ensure RabbitMQ Running"
+    }
+  ],
+  "configurations": [
+    {
+      "name": "OrderService",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "${workspaceFolder}/OrderService/OrderService.csproj",
+        "--urls",
+        "http://localhost:5044"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "name": "InventoryService",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "${workspaceFolder}/InventoryService/InventoryService.csproj",
+        "--urls",
+        "http://localhost:5077"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "name": "PaymentService",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "${workspaceFolder}/PaymentService/PaymentService.csproj",
+        "--urls",
+        "http://localhost:5122"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "name": "ApiGateway",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "${workspaceFolder}/ApiGateway/ApiGateway.csproj",
+        "--urls",
+        "http://localhost:5214"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "Now listening on:\\s+(https?://\\S+)"
+      }
+    }
+  ]
+}

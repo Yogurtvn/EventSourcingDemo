@@ -1,0 +1,17 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Ensure RabbitMQ Running",
+      "type": "shell",
+      "command": "docker start prn232-rabbitmq; if ($LASTEXITCODE -ne 0) { docker run -d --name prn232-rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management }",
+      "problemMatcher": []
+    },
+    {
+      "label": "Stop RabbitMQ",
+      "type": "shell",
+      "command": "docker stop prn232-rabbitmq",
+      "problemMatcher": []
+    }
+  ]
+}
