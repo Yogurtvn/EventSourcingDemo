@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApiGateway", "ApiGateway\Ap
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NotificationService", "NotificationService\NotificationService.csproj", "{BB25EB18-6722-406A-BC7B-AE06E27249EE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnalyticsService", "AnalyticsService\AnalyticsService.csproj", "{3A8D2681-F8AB-4715-8505-66C1E05147E2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -111,6 +113,18 @@ Global
 		{BB25EB18-6722-406A-BC7B-AE06E27249EE}.Release|x64.Build.0 = Release|Any CPU
 		{BB25EB18-6722-406A-BC7B-AE06E27249EE}.Release|x86.ActiveCfg = Release|Any CPU
 		{BB25EB18-6722-406A-BC7B-AE06E27249EE}.Release|x86.Build.0 = Release|Any CPU
+		{3A8D2681-F8AB-4715-8505-66C1E05147E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A8D2681-F8AB-4715-8505-66C1E05147E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A8D2681-F8AB-4715-8505-66C1E05147E2}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3A8D2681-F8AB-4715-8505-66C1E05147E2}.Debug|x64.Build.0 = Debug|Any CPU
+		{3A8D2681-F8AB-4715-8505-66C1E05147E2}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3A8D2681-F8AB-4715-8505-66C1E05147E2}.Debug|x86.Build.0 = Debug|Any CPU
+		{3A8D2681-F8AB-4715-8505-66C1E05147E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A8D2681-F8AB-4715-8505-66C1E05147E2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3A8D2681-F8AB-4715-8505-66C1E05147E2}.Release|x64.ActiveCfg = Release|Any CPU
+		{3A8D2681-F8AB-4715-8505-66C1E05147E2}.Release|x64.Build.0 = Release|Any CPU
+		{3A8D2681-F8AB-4715-8505-66C1E05147E2}.Release|x86.ActiveCfg = Release|Any CPU
+		{3A8D2681-F8AB-4715-8505-66C1E05147E2}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
