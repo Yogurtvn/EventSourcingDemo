@@ -7,6 +7,15 @@ public sealed class NotificationEmailService(IConfiguration configuration, ILogg
 {
     public async Task SendAsync(string toEmail, string subject, string body, CancellationToken cancellationToken = default)
     {
+        _ = await SendWithOutcomeAsync(toEmail, subject, body, cancellationToken);
+    }
+
+    public async ValueTask<EmailSendOutcome> SendWithOutcomeAsync(
+        string toEmail,
+        string subject,
+        string body,
+        CancellationToken cancellationToken = default)
+    {
         var apiKey = configuration["SendGrid:ApiKey"];
         var fromEmail = configuration["SendGrid:FromEmail"];
         var fromName = configuration["SendGrid:FromName"] ?? "EventSourcingDemo";
@@ -17,7 +26,7 @@ public sealed class NotificationEmailService(IConfiguration configuration, ILogg
                 "SendGrid not configured (SendGrid:ApiKey / SendGrid:FromEmail). Would send to {To}: {Subject}",
                 toEmail,
                 subject);
-            return;
+            return EmailSendOutcome.SkippedNotConfigured;
         }
 
         try
@@ -31,15 +40,15 @@ public sealed class NotificationEmailService(IConfiguration configuration, ILogg
             if (response.IsSuccessStatusCode)
             {
                 logger.LogInformation("SendGrid OK: {Subject} -> {To}", subject, toEmail);
+                return EmailSendOutcome.Delivered;
             }
-            else
-            {
-                var responseBody = await response.Body.ReadAsStringAsync(cancellationToken);
-                logger.LogError(
-                    "SendGrid failed: {StatusCode} {Body}",
-                    response.StatusCode,
-                    responseBody);
-            }
+
+            var responseBody = await response.Body.ReadAsStringAsync(cancellationToken);
+            logger.LogError(
+                "SendGrid failed: {StatusCode} {Body}",
+                response.StatusCode,
+                responseBody);
+            return EmailSendOutcome.ProviderRejected;
         }
         catch (Exception ex)
         {
