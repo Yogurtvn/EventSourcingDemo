@@ -1,137 +1,101 @@
-# Hướng dẫn triển khai NotificationService
+# Mô tả Notification Service
 
-`NotificationService` đóng vai trò **Observer**: lắng nghe các sự kiện trên **RabbitMQ** (cùng exchange với các service khác), tra cứu email qua **HTTP OrderService**, gửi mail qua **SendGrid**, có **lưu DB** để audit và **chống gửi trùng** khi message bị retry.
+## Vai trò trong hệ thống
 
-Tài liệu này nằm cùng project `NotificationService`; code chạy thực tế là các file `.cs` trong thư mục này.
+**Notification Service** là một microservice **quan sát (observer)** bên lề luồng Saga chính. Nó không ra quyết định nghiệp vụ (không giữ hàng, không thanh toán, không đổi trạng thái đơn trong Order Service). Nhiệm vụ của nó là:
 
----
+- **Nhận** các sự kiện đã được publish lên **RabbitMQ** (cùng exchange `saga.events` với Order / Inventory / Payment).
+- **Tra cứu** địa chỉ email khách hàng bằng **HTTP** gọi sang **Order Service** (read model khách hàng và đơn hàng).
+- **Gửi email** HTML qua **SendGrid**.
+- **Ghi nhận** mỗi lần xử lý vào **cơ sở dữ liệu riêng** để **audit** và **idempotency** (tránh gửi trùng khi broker retry message).
 
-## Kiến trúc hiện tại (đã có trong repo)
-
-| Thành phần | Vai trò |
-|------------|---------|
-| `Program.cs` | `AddControllers`, OpenAPI/Swagger (Development), `AddDbContext`, `AddHttpClient`, `AddRabbitMqEventBus`, `AddHostedService<NotificationSagaSubscriber>`, scoped services |
-| `Services/NotificationSagaSubscriber.cs` | `IHostedService`: trong `StartAsync` gọi `eventBus.Subscribe<TEvent>(queueName, handler)` cho `OrderCreated`, `OrderCompleted`, `OrderCancelled` |
-| `Infrastructure/Http/OrderCatalogClient.cs` | Gọi `GET {OrderService:BaseUrl}/orders/customers` và `GET .../orders/{orderId}` để lấy email |
-| `Services/NotificationEmailService.cs` | Gửi mail SendGrid; `SendWithOutcomeAsync` cho ledger |
-| `Services/NotificationLedgerService.cs` | Idempotency + ghi `NotificationSendLog` + điều phối gửi mail |
-| `Services/EmailTemplateService.cs` | HTML template cho từng loại thông báo |
-| `Controllers/NotificationStatusController.cs` | `GET /notifications/health` (và `/api/notifications/health`) |
-| `Controllers/NotificationDispatchController.cs` | `GET /notifications/dispatches` — lịch sử gửi |
-
-**Lưu ý quan trọng**
-
-- Interface `IRabbitMqEventBus` **không** có `SubscribeAsync`; chỉ có `Subscribe<TEvent>(string queueName, Func<TEvent, Task> handler)`.
-- `ExchangeName` phải trùng các service khác: **`saga.events`**.
-- Mỗi loại event dùng **queue riêng**, ví dụ `notification.order-created`, `notification.order-completed`, `notification.order-cancelled`.
-- **Không** subscribe `PaymentFailed` trong Notification: khi thanh toán lỗi, `OrderService` publish `OrderCancelled`; Notification chỉ listen `OrderCancelled`.
+Service chạy như một ứng dụng ASP.NET Core độc lập (cổng mặc định dev khác Order Service, ví dụ `5180`).
 
 ---
 
-## Bước 1: Khởi tạo project (nếu tạo mới từ đầu)
+## Luồng dữ liệu tổng quan
 
-Chạy từ thư mục gốc solution:
-
-```bash
-dotnet new webapi -n NotificationService -f net9.0
-dotnet sln add NotificationService/NotificationService.csproj
-dotnet add NotificationService/NotificationService.csproj reference Shared.Contracts/Shared.Contracts.csproj
-dotnet add NotificationService/NotificationService.csproj reference Shared.Messaging/Shared.Messaging.csproj
-dotnet add NotificationService/NotificationService.csproj package SendGrid
-dotnet add NotificationService/NotificationService.csproj package Swashbuckle.AspNetCore
+```text
+OrderService (và các service khác)
+        │  publish JSON event
+        ▼
+   RabbitMQ (exchange: saga.events, routing key = tên class event)
+        │
+        ├──► InventoryService / PaymentService / OrderService (Saga)
+        │
+        └──► NotificationService (queue riêng từng loại event)
+                    │
+                    ├─► HTTP → OrderService: /orders/customers, /orders/{orderId}
+                    ├─► SendGrid API (email HTML)
+                    └─► DB: bảng NotificationSendLog
 ```
 
----
-
-## Bước 2: Cấu hình `appsettings.json`
-
-Điền SendGrid qua **User Secrets** hoặc biến môi trường; **không commit API key** lên Git.
-
-```json
-{
-  "OrderService": {
-    "BaseUrl": "http://localhost:5044"
-  },
-  "ConnectionStrings": {
-    "NotificationDb": "Data Source=notification-service.db",
-    "NotificationDbPostgres": "Host=localhost;Port=5432;Database=notification_service;Username=postgres;Password=***"
-  },
-  "RabbitMq": {
-    "HostName": "localhost",
-    "Port": 5672,
-    "UserName": "guest",
-    "Password": "guest",
-    "ExchangeName": "saga.events",
-    "StartupConnectRetryCount": 30,
-    "StartupConnectRetryDelayMs": 1000,
-    "RetryCount": 3,
-    "RetryDelayMs": 200
-  },
-  "SendGrid": {
-    "ApiKey": "",
-    "FromEmail": "",
-    "FromName": "EventSourcingDemo"
-  }
-}
-```
-
-**User Secrets (khuyên dùng khi dev):**
-
-```bash
-cd NotificationService
-dotnet user-secrets init
-dotnet user-secrets set "SendGrid:ApiKey" "SG...."
-dotnet user-secrets set "SendGrid:FromEmail" "verified-sender@yourdomain.com"
-```
+Notification **không** đọc Event Store của Order Service và **không** subscribe trực tiếp `PaymentFailed`. Khi thanh toán lỗi, **Order Service** đã chuẩn hóa kết quả thành **`OrderCancelled`**; Notification chỉ cần phản ứng với `OrderCancelled` để gửi mail hủy đơn kèm `Reason`.
 
 ---
 
-## Bước 3: Subscribe RabbitMQ
+## Sự kiện được xử lý
 
-Trong `NotificationSagaSubscriber.StartAsync`, dùng `eventBus.Subscribe<...>(queueName, handler)` và `IServiceScopeFactory.CreateScope()` trong handler.
+| Event (Shared.Contracts) | Hàng đợi RabbitMQ (ví dụ) | Nội dung email (ý tưởng) |
+|--------------------------|---------------------------|---------------------------|
+| `OrderCreated` | `notification.order-created` | Xác nhận đã nhận đơn, tổng tiền |
+| `OrderCompleted` | `notification.order-completed` | Đơn hoàn tất / thanh toán thành công |
+| `OrderCancelled` | `notification.order-cancelled` | Đơn bị hủy và lý do |
 
----
-
-## Bước 4: `Program.cs`
-
-- `AddControllers`, OpenAPI/Swagger (Development)
-- `AddDbContext<NotificationDbContext>` (Postgres nếu `NotificationDbPostgres` khác rỗng, không thì SQLite)
-- `EnsureCreated()` khi khởi động
-- `AddHttpClient`, scoped services, `AddRabbitMqEventBus`, `AddHostedService<NotificationSagaSubscriber>`
-
-Cổng trong `Properties/launchSettings.json` nên **khác** OrderService (ví dụ `5180`).
+Payload event mang `AggregateId` (order id) và các field theo contract; **email khách** không có trong message, nên service phải gọi Order Service.
 
 ---
 
-## Bước 5: Lưu DB — log + idempotency
+## Thành phần chính trong codebase
 
-Đã triển khai trong project này:
+| Thành phần | Trách nhiệm |
+|------------|-------------|
+| **NotificationSagaSubscriber** | `IHostedService`: khi app khởi động đăng ký `IRabbitMqEventBus.Subscribe<...>`; mỗi handler tạo DI scope và gọi **NotificationLedgerService**. |
+| **NotificationLedgerService** | Tính **idempotency key** (`OrderCreated:{guid}`, …); nếu đã có bản ghi trong DB thì bỏ qua; resolve email; gọi template + SendGrid; **ghi một dòng** `NotificationSendLog`; bắt vi phạm unique khi hai consumer race hiếm. |
+| **OrderCatalogClient** | HTTP client: danh sách khách (`/orders/customers`), chi tiết đơn (`/orders/{orderId}`) để suy ra `CustomerId` → email. |
+| **NotificationEmailService** | Gọi SendGrid; trả về **EmailSendOutcome** (gửi thành công / chưa cấu hình / provider từ chối). Exception mạng vẫn có thể ném ra để Rabbit retry theo cấu hình bus. |
+| **EmailTemplateService** | Sinh nội dung HTML (layout + nội dung theo từng loại thông báo). |
+| **NotificationDbContext** + **NotificationSendLog** | EF Core; bảng `NotificationSendLog`, **unique** trên `IdempotencyKey`. |
+| **NotificationStatusController** | `GET /notifications/health` — kiểm tra service sống. |
+| **NotificationDispatchController** | `GET /notifications/dispatches?take=…` — đọc lịch sử gửi (tối đa `take` theo giới hạn API). |
 
-| File | Nội dung |
-|------|----------|
-| `Models/NotificationSendLog.cs` | Entity log + idempotency key |
-| `Infrastructure/Persistence/NotificationDbContext.cs` | EF Core, bảng `NotificationSendLog`, unique `IdempotencyKey` |
-| `Services/NotificationLedgerService.cs` | Kiểm tra key, gửi mail, ghi log; bắt unique violation khi race |
-| `Services/EmailSendOutcome.cs` | Delivered / SkippedNotConfigured / ProviderRejected |
-| `Services/NotificationDispatchStatus.cs` | Hằng số trạng thái log |
-
-Database `notification_service` trên Postgres: xem `docs/sql/init-postgres.sql` ở thư mục gốc solution.
-
-**API lịch sử:** `GET /notifications/dispatches` hoặc `GET /api/notifications/dispatches?take=50` (`take` tối đa 500).
-
----
-
-## Tóm tắt luồng dữ liệu
-
-1. Client tạo đơn → `OrderService` publish `OrderCreated`.
-2. Notification nhận event → HTTP lấy email → SendGrid (HTML) → ghi log.
-3. Saga thành công → `OrderCompleted` → mail hoàn tất + log.
-4. Hủy đơn → `OrderCancelled` → mail hủy + log.
+**Giao thức messaging:** `IRabbitMqEventBus` chỉ có `Subscribe<TEvent>(queueName, handler)`, không có `SubscribeAsync`. Exchange phải trùng các service còn lại (**`saga.events`**).
 
 ---
 
-## Checklist
+## Idempotency và trạng thái log
 
-- [x] EF + DbContext + `EnsureCreated()`
-- [x] `NotificationLedgerService` + `NotificationSagaSubscriber`
-- [ ] Không commit secret SendGrid; dùng User Secrets / env trên CI
+Mỗi cặp (loại event + `AggregateId`) ứng với một **IdempotencyKey** duy nhất. Trước khi gửi, service kiểm tra đã tồn tại key trong DB chưa; nếu có thì **không gửi lại** (phù hợp khi message bị deliver lại).
+
+Sau khi xử lý, một dòng log ghi:
+
+- **Sent** — SendGrid trả thành công.
+- **SkippedNoRecipient** — không tìm được email.
+- **SkippedNotConfigured** — thiếu `SendGrid:ApiKey` / `FromEmail`.
+- **Failed** — SendGrid trả mã lỗi HTTP (không ném exception trong trường hợp đó để message được ack; có thể điều chỉnh sau nếu muốn retry).
+
+---
+
+## Cấu hình (tóm tắt)
+
+- **OrderService:BaseUrl** — URL gốc Order API (mặc định dev thường `http://localhost:5044`).
+- **ConnectionStrings** — `NotificationDb` (SQLite) hoặc `NotificationDbPostgres` (PostgreSQL, database `notification_service` nếu dùng Postgres; có thể tạo qua `docs/sql/init-postgres.sql` ở solution).
+- **RabbitMq** — giống các service khác (`HostName`, `Port`, `ExchangeName`, …).
+- **SendGrid** — API key và sender đã xác thực; **không nên** commit secret vào Git; dùng User Secrets hoặc biến môi trường trên môi trường thật.
+
+---
+
+## Phụ thuộc vận hành
+
+Để Notification hoạt động đầy đủ cần:
+
+1. **RabbitMQ** đang chạy và các service Saga publish event.
+2. **Order Service** chạy và API customers/orders phản hồi đúng.
+3. **SendGrid** (hoặc chấp nhận log `SkippedNotConfigured` khi dev không cấu hình).
+4. **Database** — SQLite file hoặc Postgres; schema tạo khi khởi động (`EnsureCreated`).
+
+---
+
+## Tóm tắt
+
+Notification Service **bổ sung trải nghiệm người dùng** (email) và **minh chứng gửi** (DB), **tách biệt** với luồng nghiệp vụ Saga: nó phản ứng với các event đã “chốt” hoặc đã được định nghĩa rõ (`OrderCreated`, `OrderCompleted`, `OrderCancelled`) thay vì can thiệp vào từng bước trung gian như `InventoryReserved` hay `PaymentFailed`.
