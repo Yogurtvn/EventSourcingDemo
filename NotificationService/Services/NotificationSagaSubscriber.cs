@@ -1,4 +1,3 @@
-using NotificationService.Infrastructure.Http;
 using Shared.Contracts.Events;
 using Shared.Messaging.RabbitMq;
 
@@ -18,58 +17,22 @@ public sealed class NotificationSagaSubscriber(
         eventBus.Subscribe<OrderCreated>("notification.order-created", async @event =>
         {
             using var scope = scopeFactory.CreateScope();
-            var catalog = scope.ServiceProvider.GetRequiredService<OrderCatalogClient>();
-            var emailService = scope.ServiceProvider.GetRequiredService<NotificationEmailService>();
-            var templateService = scope.ServiceProvider.GetRequiredService<EmailTemplateService>();
-
-            var email = await catalog.GetEmailByCustomerIdAsync(@event.CustomerId);
-            if (string.IsNullOrWhiteSpace(email))
-            {
-                logger.LogWarning("No email for customer {CustomerId}; skip OrderCreated notification", @event.CustomerId);
-                return;
-            }
-
-            var subject = "Xác nhận đơn hàng";
-            var htmlBody = templateService.GetOrderCreatedHtml(@event.AggregateId, @event.CustomerId, @event.TotalAmount);
-            await emailService.SendAsync(email, subject, htmlBody);
+            var ledger = scope.ServiceProvider.GetRequiredService<NotificationLedgerService>();
+            await ledger.HandleOrderCreatedAsync(@event);
         });
 
         eventBus.Subscribe<OrderCompleted>("notification.order-completed", async @event =>
         {
             using var scope = scopeFactory.CreateScope();
-            var catalog = scope.ServiceProvider.GetRequiredService<OrderCatalogClient>();
-            var emailService = scope.ServiceProvider.GetRequiredService<NotificationEmailService>();
-            var templateService = scope.ServiceProvider.GetRequiredService<EmailTemplateService>();
-
-            var email = await catalog.GetEmailByOrderIdAsync(@event.AggregateId);
-            if (string.IsNullOrWhiteSpace(email))
-            {
-                logger.LogWarning("No email for order {OrderId}; skip OrderCompleted notification", @event.AggregateId);
-                return;
-            }
-
-            var subject = "Đơn hàng hoàn tất";
-            var htmlBody = templateService.GetOrderCompletedHtml(@event.AggregateId);
-            await emailService.SendAsync(email, subject, htmlBody);
+            var ledger = scope.ServiceProvider.GetRequiredService<NotificationLedgerService>();
+            await ledger.HandleOrderCompletedAsync(@event);
         });
 
         eventBus.Subscribe<OrderCancelled>("notification.order-cancelled", async @event =>
         {
             using var scope = scopeFactory.CreateScope();
-            var catalog = scope.ServiceProvider.GetRequiredService<OrderCatalogClient>();
-            var emailService = scope.ServiceProvider.GetRequiredService<NotificationEmailService>();
-            var templateService = scope.ServiceProvider.GetRequiredService<EmailTemplateService>();
-
-            var email = await catalog.GetEmailByOrderIdAsync(@event.AggregateId);
-            if (string.IsNullOrWhiteSpace(email))
-            {
-                logger.LogWarning("No email for order {OrderId}; skip OrderCancelled notification", @event.AggregateId);
-                return;
-            }
-
-            var subject = "Thông báo hủy đơn hàng";
-            var htmlBody = templateService.GetOrderCancelledHtml(@event.AggregateId, @event.Reason);
-            await emailService.SendAsync(email, subject, htmlBody);
+            var ledger = scope.ServiceProvider.GetRequiredService<NotificationLedgerService>();
+            await ledger.HandleOrderCancelledAsync(@event);
         });
 
         logger.LogInformation("Notification saga subscribers started (OrderService at {BaseUrl})", _orderServiceBaseUrl);
