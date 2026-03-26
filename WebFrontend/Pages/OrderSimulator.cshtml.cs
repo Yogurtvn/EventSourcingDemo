@@ -1,108 +1,95 @@
-using Microsoft.AspNetCore.Mvc;
+ï»¿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 
-namespace WebFrontend.Pages
+namespace WebFrontend.Pages;
+
+public class OrderSimulatorModel(IHttpClientFactory httpClientFactory) : PageModel
 {
-    public class OrderSimulatorModel : PageModel
+    public List<CustomerDto> Customers { get; set; } = new();
+
+    [BindProperty]
+    public CreateOrderRequestDto OrderRequest { get; set; } = new();
+
+    public string? SuccessMessage { get; set; }
+    public string? ErrorMessage { get; set; }
+
+    public async Task OnGetAsync()
     {
-        private readonly IHttpClientFactory _httpClientFactory;
+        await LoadCustomersAsync();
+    }
 
-        public OrderSimulatorModel(IHttpClientFactory httpClientFactory)
+    public async Task<IActionResult> OnPostAsync()
+    {
+        if (!ModelState.IsValid)
         {
-            _httpClientFactory = httpClientFactory;
-        }
-
-        // Danh sách khách hàng ?? ??a vào Dropdown
-        public List<CustomerDto> Customers { get; set; } = new();
-
-        // Bi?n h?ng d? li?u t? Form g?i lên
-        [BindProperty]
-        public CreateOrderRequestDto OrderRequest { get; set; } = new();
-
-        public string? SuccessMessage { get; set; }
-        public string? ErrorMessage { get; set; }
-
-        public async Task OnGetAsync()
-        {
-            await LoadCustomers();
-        }
-
-        // Hàm ch?y khi b?n b?m nút "KÍCH HO?T SAGA"
-        public async Task<IActionResult> OnPostAsync()
-        {
-            if (!ModelState.IsValid)
-            {
-                await LoadCustomers();
-                return Page();
-            }
-
-            // G?i qua API Gateway ?? t?o ??n hàng
-            var client = _httpClientFactory.CreateClient("GatewayClient");
-
-            try
-            {
-                var content = new StringContent(JsonSerializer.Serialize(OrderRequest), Encoding.UTF8, "application/json");
-
-                // B?n HTTP POST t?o ??n
-                var response = await client.PostAsync("/api/orders", content);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    SuccessMessage = $"Kh?i t?o Saga thành công! Vui lòng qua trang 'Qu?n lý ??n hàng' ?? xem tr?ng thái ng?m ?ang ch?y.";
-                }
-                else
-                {
-                    ErrorMessage = $"L?i t? Gateway/OrderService: Mã tr? v? {response.StatusCode}";
-                }
-            }
-            catch (Exception ex)
-            {
-                ErrorMessage = $"L?i k?t n?i: {ex.Message}";
-            }
-
-            // Load l?i danh sách khách hàng ?? form không b? tr?ng
-            await LoadCustomers();
+            await LoadCustomersAsync();
             return Page();
         }
 
-        private async Task LoadCustomers()
+        var client = httpClientFactory.CreateClient("GatewayClient");
+
+        try
         {
-            var client = _httpClientFactory.CreateClient("GatewayClient");
-            try
+            var content = new StringContent(
+                JsonSerializer.Serialize(OrderRequest),
+                Encoding.UTF8,
+                "application/json");
+
+            using var response = await client.PostAsync("/gateway/orders", content);
+            if (response.IsSuccessStatusCode)
             {
-                // G?i API l?y danh sách khách hàng
-                var response = await client.GetAsync("/api/orders/customers");
-                if (response.IsSuccessStatusCode)
-                {
-                    var json = await response.Content.ReadAsStringAsync();
-                    Customers = JsonSerializer.Deserialize<List<CustomerDto>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
-                }
-                else
-                {
-                    ErrorMessage = $"Không th? t?i danh sách khách hàng. Mã l?i: {response.StatusCode}. (L?u ý: N?u b? 404, hãy ki?m tra YARP Gateway có map ?úng route ch?a!)";
-                }
+                SuccessMessage = "Khoi tao saga thanh cong. Mo trang Quan Ly Don Hang de xem ket qua.";
             }
-            catch (Exception ex)
+            else
             {
-                ErrorMessage = $"L?i k?t n?i t?i khách hàng: {ex.Message}";
+                ErrorMessage = $"Gateway/OrderService returned {response.StatusCode}.";
             }
         }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Connection error: {ex.Message}";
+        }
+
+        await LoadCustomersAsync();
+        return Page();
     }
 
-    // --- Các DTO h?ng d? li?u ---
-    public class CustomerDto
+    private async Task LoadCustomersAsync()
     {
-        public Guid CustomerId { get; set; }
-        public string FullName { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-    }
+        var client = httpClientFactory.CreateClient("GatewayClient");
 
-    public class CreateOrderRequestDto
-    {
-        public Guid CustomerId { get; set; }
-        public decimal TotalAmount { get; set; } = 500000;
-        public string TestScenario { get; set; } = "happy"; // M?c ??nh là thành công
+        try
+        {
+            using var response = await client.GetAsync("/orders/customers");
+            if (response.IsSuccessStatusCode)
+            {
+                Customers = await response.Content.ReadFromJsonAsync<List<CustomerDto>>() ?? new();
+            }
+            else
+            {
+                ErrorMessage = $"Could not load customers. Status code: {response.StatusCode}.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Customer API connection error: {ex.Message}";
+        }
     }
+}
+
+public class CustomerDto
+{
+    public string CustomerId { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+}
+
+public class CreateOrderRequestDto
+{
+    public string CustomerId { get; set; } = string.Empty;
+    public decimal TotalAmount { get; set; } = 500000;
+    public string TestScenario { get; set; } = "happy";
 }

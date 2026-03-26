@@ -1,76 +1,65 @@
-﻿using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.Text.Json;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Net.Http.Json;
 
-namespace WebFrontend.Pages
+namespace WebFrontend.Pages;
+
+public class IndexModel(IHttpClientFactory httpClientFactory) : PageModel
 {
-    public class IndexModel : PageModel
+    public DashboardSummaryDto? Summary { get; set; }
+    public List<TopSpenderDto> TopSpenders { get; set; } = new();
+    public string ErrorMessage { get; set; } = string.Empty;
+
+    public async Task OnGetAsync()
     {
-        private readonly IHttpClientFactory _httpClientFactory;
+        var client = httpClientFactory.CreateClient("AnalyticsClient");
 
-        public DashboardSummaryDto? Summary { get; set; }
-        public List<TopSpenderDto> TopSpenders { get; set; } = new();
-        public string ErrorMessage { get; set; } = "";
-
-        public IndexModel(IHttpClientFactory httpClientFactory)
+        try
         {
-            _httpClientFactory = httpClientFactory;
-        }
-
-        public async Task OnGetAsync()
-        {
-            // Dùng client gọi thẳng vào cổng của AnalyticsService (Ví dụ: http://localhost:5005)
-            var client = _httpClientFactory.CreateClient("AnalyticsClient");
-
-            try
+            using var summaryResponse = await client.GetAsync("/api/AnalyticsDashboard/summary");
+            if (summaryResponse.IsSuccessStatusCode)
             {
-                // 1. Gọi API Tổng quan (Map theo tên class AnalyticsDashboardController)
-                var summaryRes = await client.GetAsync("/api/AnalyticsDashboard");
-
-                if (summaryRes.IsSuccessStatusCode)
-                {
-                    var json = await summaryRes.Content.ReadAsStringAsync();
-                    Summary = JsonSerializer.Deserialize<DashboardSummaryDto>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                }
-                else
-                {
-                    ErrorMessage += $"Lỗi Dashboard: API /api/AnalyticsDashboard trả về {summaryRes.StatusCode}. ";
-                }
-
-                // 2. Gọi API Top Khách Hàng (Map theo class AnalyticsCustomersController)
-                var spendersRes = await client.GetAsync("/api/AnalyticsCustomers/top-spenders?take=5");
-
-                if (spendersRes.IsSuccessStatusCode)
-                {
-                    var json = await spendersRes.Content.ReadAsStringAsync();
-                    TopSpenders = JsonSerializer.Deserialize<List<TopSpenderDto>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
-                }
-                else
-                {
-                    ErrorMessage += $"Lỗi Top Spender: API /api/AnalyticsCustomers/top-spenders trả về {spendersRes.StatusCode}. ";
-                }
+                Summary = await summaryResponse.Content.ReadFromJsonAsync<DashboardSummaryDto>();
             }
-            catch (Exception ex)
+            else
             {
-                ErrorMessage = "Không thể kết nối đến AnalyticsService. Lỗi: " + ex.Message;
+                ErrorMessage += $"Dashboard API returned {summaryResponse.StatusCode}. ";
+            }
+
+            using var topSpendersResponse = await client.GetAsync("/api/AnalyticsDashboard/customers/top-spenders?take=5");
+            if (topSpendersResponse.IsSuccessStatusCode)
+            {
+                TopSpenders = await topSpendersResponse.Content.ReadFromJsonAsync<List<TopSpenderDto>>() ?? new();
+            }
+            else
+            {
+                ErrorMessage += $"Top spenders API returned {topSpendersResponse.StatusCode}. ";
             }
         }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Could not connect to AnalyticsService. Error: {ex.Message}";
+        }
     }
+}
 
-    // --- Giữ nguyên các class DTO bên dưới ---
-    public class DashboardSummaryDto
-    {
-        public int TotalOrders { get; set; }
-        public decimal TotalRevenue { get; set; }
-        public int SuccessfulOrders { get; set; }
-        public int FailedOrders { get; set; }
-        public double SuccessRate { get; set; }
-    }
+public class DashboardSummaryDto
+{
+    public int TotalOrders { get; set; }
+    public int CompletedOrders { get; set; }
+    public int CancelledOrders { get; set; }
+    public int PendingOrders { get; set; }
+    public decimal TotalRevenue { get; set; }
+    public int TotalCustomers { get; set; }
+    public decimal AverageOrderValue { get; set; }
 
-    public class TopSpenderDto
-    {
-        public string CustomerId { get; set; } = string.Empty;
-        public string CustomerName { get; set; } = string.Empty;
-        public decimal TotalSpent { get; set; }
-        public int OrderCount { get; set; }
-    }
+    public double SuccessRate => TotalOrders == 0
+        ? 0
+        : Math.Round((double)CompletedOrders / TotalOrders * 100, 1);
+}
+
+public class TopSpenderDto
+{
+    public string CustomerId { get; set; } = string.Empty;
+    public int TotalOrders { get; set; }
+    public decimal TotalSpent { get; set; }
 }

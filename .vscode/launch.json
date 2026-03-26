@@ -4,6 +4,8 @@
     {
       "name": "Run All Services + Gateway",
       "configurations": [
+        "WebFrontend",
+        "AnalyticsService",
         "OrderService",
         "InventoryService",
         "PaymentService",
@@ -14,6 +16,38 @@
     }
   ],
   "configurations": [
+    {
+      "name": "WebFrontend",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "${workspaceFolder}/WebFrontend/WebFrontend.csproj",
+        "--urls",
+        "http://localhost:5168"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "name": "AnalyticsService",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "${workspaceFolder}/AnalyticsService/AnalyticsService.csproj",
+        "--urls",
+        "http://localhost:5006"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
     {
       "name": "OrderService",
       "type": "coreclr",

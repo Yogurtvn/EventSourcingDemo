@@ -1,0 +1,76 @@
+@page
+@model WebFrontend.Pages.OrderListModel
+@{
+    ViewData["Title"] = "Quan Ly Don Hang";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="bi bi-list-check text-primary me-2"></i>Quan Ly Don Hang</h2>
+        <p class="text-muted mb-0">Doc Read Model tu OrderService de xem trang thai cuoi cua tung order.</p>
+    </div>
+    <a asp-page="/OrderList" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-clockwise me-1"></i>Lam moi
+    </a>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@Model.ErrorMessage
+    </div>
+}
+else
+{
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3">
+            <strong>Danh sach don hang gan day</strong>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Ma don</th>
+                            <th>Khach hang</th>
+                            <th class="text-end">So tien</th>
+                            <th>Trang thai</th>
+                            <th>Cap nhat cuoi</th>
+                            <th class="text-end">Tac vu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Orders.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">Chua co don hang nao.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var order in Model.Orders)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@order.OrderId</td>
+                                    <td>@order.CustomerId</td>
+                                    <td class="text-end">@order.TotalAmount.ToString("N0") VNĐ</td>
+                                    <td>
+                                        <span class="badge @OrderListModel.GetStatusBadgeClass(order.Status)">
+                                            @OrderListModel.GetDisplayStatus(order.Status)
+                                        </span>
+                                    </td>
+                                    <td>@order.LastUpdatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</td>
+                                    <td class="text-end">
+                                        <a asp-page="/AuditTimeline" asp-route-orderId="@order.OrderId" class="btn btn-sm btn-outline-primary">
+                                            Xem Timeline
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
