@@ -1,99 +1,159 @@
-﻿@page
+@page
 @model WebFrontend.Pages.OrderSimulatorModel
 @{
-    ViewData["Title"] = "Tạo Đơn Hàng (Saga Simulator)";
+    ViewData["Title"] = "Tạo đơn hàng";
 }
 
-<div class="mb-4">
-    <h2><i class="bi bi-cart-plus-fill text-success me-2"></i> Giả lập Đặt Hàng (Saga Pattern)</h2>
-    <p class="text-muted">Sử dụng Control Panel này để bắn request tạo đơn hàng và kích hoạt chuỗi sự kiện Microservices chạy ngầm qua RabbitMQ.</p>
-</div>
+<section class="hero-panel mb-4">
+    <div class="d-flex flex-column flex-lg-row justify-content-between gap-4">
+        <div>
+            <p class="hero-eyebrow">Saga Simulator</p>
+            <h1>Tạo đơn hàng và kích hoạt Saga</h1>
+            <p class="hero-copy">
+                Dùng trang này để tạo lệnh mua hàng mới và mô phỏng các kịch bản thành công,
+                rollback hoặc ngẫu nhiên trong quá trình thanh toán.
+            </p>
+        </div>
+        <div class="hero-actions">
+            <a asp-page="/OrderList" class="btn btn-soft-light">
+                <i class="bi bi-list-check me-2"></i>Xem danh sách đơn
+            </a>
+        </div>
+    </div>
+</section>
 
 @if (!string.IsNullOrEmpty(Model.SuccessMessage))
 {
-    <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
-        <i class="bi bi-check-circle-fill me-2"></i> @Model.SuccessMessage
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>@Model.SuccessMessage
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 }
+
 @if (!string.IsNullOrEmpty(Model.ErrorMessage))
 {
-    <div class="alert alert-danger shadow-sm" role="alert">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i> @Model.ErrorMessage
+    <div class="alert alert-danger" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@Model.ErrorMessage
     </div>
 }
 
-<div class="row">
-    <div class="col-md-7">
-        <div class="card shadow border-0">
-            <div class="card-header bg-dark text-white py-3">
-                <h5 class="mb-0"><i class="bi bi-sliders me-2"></i> Command Control Panel</h5>
+<div class="row g-4">
+    <div class="col-lg-7">
+        <section class="section-card h-100">
+            <div class="section-header">
+                <div>
+                    <p class="section-eyebrow">Command Panel</p>
+                    <h2 class="section-title">Biểu mẫu đặt hàng</h2>
+                    <p class="section-copy">Frontend sẽ gửi lệnh tạo đơn qua API Gateway, sau đó Saga tiếp tục xử lý bất đồng bộ ở backend.</p>
+                </div>
             </div>
-            <div class="card-body p-4">
-                <form method="post">
-                    <div class="mb-4">
-                        <label class="form-label fw-bold text-secondary">1. Chọn Khách Hàng (Aggregate Root)</label>
-                        <select asp-for="OrderRequest.CustomerId" class="form-select form-select-lg bg-light" required>
-                            <option value="">-- Lựa chọn khách hàng để đặt đơn --</option>
-                            @foreach (var cus in Model.Customers)
-                            {
-                                <option value="@cus.CustomerId">@cus.FullName (@cus.Email)</option>
-                            }
-                        </select>
-                    </div>
 
-                    <div class="mb-4">
-                        <label class="form-label fw-bold text-secondary">2. Giá trị Đơn Hàng (VNĐ)</label>
-                        <input asp-for="OrderRequest.TotalAmount" type="number" class="form-control form-control-lg text-end fw-bold text-success" step="1000" required />
-                    </div>
+            <form method="post" class="form-grid">
+                <div>
+                    <label class="form-label fw-semibold">1. Chọn khách hàng</label>
+                    <select asp-for="OrderRequest.CustomerId" class="form-select form-select-lg" required>
+                        <option value="">-- Chọn khách hàng để tạo đơn --</option>
+                        @foreach (var customer in Model.Customers)
+                        {
+                            <option value="@customer.CustomerId">@customer.FullName (@customer.Email)</option>
+                        }
+                    </select>
+                </div>
 
-                    <div class="mb-5">
-                        <label class="form-label fw-bold text-secondary">3. Kịch Bản Test (Test Scenario)</label>
-                        <div class="p-3 border rounded bg-light">
-                            <select asp-for="OrderRequest.TestScenario" class="form-select border-0 shadow-sm fw-bold">
-                                <option value="happy" class="text-success">🟢 Happy Case (Ép thẻ thanh toán THÀNH CÔNG)</option>
-                                <option value="payment-fail" class="text-danger">🔴 Rollback Case (Ép thẻ báo LỖI, từ chối thanh toán)</option>
-                                <option value="" class="text-warning">🎲 Random (Hên xui 50/50)</option>
-                            </select>
-                            <small class="text-muted mt-2 d-block">
-                                <i class="bi bi-info-circle me-1"></i>
-                                Lựa chọn này sẽ nhúng một cờ (flag) vào Event. PaymentService sẽ đọc cờ này để quyết định đánh rớt hay cho qua giao dịch.
-                            </small>
-                        </div>
-                    </div>
+                <div>
+                    <label class="form-label fw-semibold">2. Tổng giá trị đơn hàng (VNĐ)</label>
+                    <input asp-for="OrderRequest.TotalAmount" type="number" class="form-control form-control-lg text-end fw-semibold" step="1000" required />
+                </div>
 
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg py-3 fw-bold fs-5 shadow">
-                            <i class="bi bi-send-fill me-2"></i> KÍCH HOẠT LUỒNG SAGA
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+                <div class="note-card">
+                    <label class="form-label fw-semibold">3. Kịch bản kiểm thử</label>
+                    <select asp-for="OrderRequest.TestScenario" class="form-select form-select-lg mb-3">
+                        <option value="happy">Happy Case - thanh toán thành công</option>
+                        <option value="payment-fail">Rollback Case - thanh toán thất bại</option>
+                        <option value="">Random - hệ thống tự quyết định</option>
+                    </select>
+                    <p class="muted-copy mb-0">
+                        Giá trị này sẽ được nhúng vào event để PaymentService quyết định xử lý thành công hay tạo luồng bù trừ.
+                    </p>
+                </div>
+
+                <button type="submit" class="btn btn-brand btn-lg">
+                    <i class="bi bi-send-fill me-2"></i>Thực thi Saga
+                </button>
+            </form>
+        </section>
     </div>
 
-    <div class="col-md-5">
-        <div class="card bg-info bg-opacity-10 border-info border-opacity-25 h-100 shadow-sm">
-            <div class="card-body p-4">
-                <h5 class="card-title text-info-emphasis mb-4"><i class="bi bi-diagram-3-fill me-2"></i> Luồng chạy Asynchronous:</h5>
-                <ul class="list-group list-group-flush bg-transparent">
-                    <li class="list-group-item bg-transparent border-info border-opacity-25 py-3">
-                        <strong>Bước 1:</strong> Frontend bắn HTTP `POST` qua API Gateway.
-                    </li>
-                    <li class="list-group-item bg-transparent border-info border-opacity-25 py-3">
-                        <strong>Bước 2:</strong> <code>OrderService</code> lập tức lưu Event <code>OrderCreated</code> và báo FE thành công (Không bắt FE chờ).
-                    </li>
-                    <li class="list-group-item bg-transparent border-info border-opacity-25 py-3">
-                        <strong>Bước 3:</strong> <code>RabbitMQ</code> truyền message cho <code>InventoryService</code> để giữ hàng.
-                    </li>
-                    <li class="list-group-item bg-transparent border-info border-opacity-25 py-3">
-                        <strong>Bước 4:</strong> <code>RabbitMQ</code> truyền tiếp message cho <code>PaymentService</code> thu tiền.
-                    </li>
-                    <li class="list-group-item bg-transparent border-0 py-3">
-                        <strong>Bước 5:</strong> Tùy Kịch bản đã chọn, hệ thống sẽ phát tín hiệu <code>Succeeded</code> hoặc kích hoạt <strong>Compensating Transaction (Rollback)</strong> ngầm bên dưới.
-                    </li>
-                </ul>
-            </div>
+    <div class="col-lg-5">
+        <div class="d-grid gap-4">
+            <section class="section-card">
+                <div class="section-header">
+                    <div>
+                        <p class="section-eyebrow">Asynchronous Flow</p>
+                        <h2 class="section-title">Luồng xử lý phía sau</h2>
+                    </div>
+                </div>
+
+                <div class="scenario-option">
+                    <span class="scenario-badge is-success">1</span>
+                    <div>
+                        <div class="fw-semibold">Frontend gửi command</div>
+                        <div class="customer-meta">Gọi HTTP POST qua API Gateway để tạo đơn hàng.</div>
+                    </div>
+                </div>
+                <div class="scenario-option">
+                    <span class="scenario-badge is-warning">2</span>
+                    <div>
+                        <div class="fw-semibold">OrderService ghi OrderCreated</div>
+                        <div class="customer-meta">Service trả phản hồi sớm cho UI và phát event sang broker.</div>
+                    </div>
+                </div>
+                <div class="scenario-option">
+                    <span class="scenario-badge is-warning">3</span>
+                    <div>
+                        <div class="fw-semibold">InventoryService giữ hàng</div>
+                        <div class="customer-meta">Nếu thành công sẽ phát InventoryReserved sang bước thanh toán.</div>
+                    </div>
+                </div>
+                <div class="scenario-option">
+                    <span class="scenario-badge is-danger">4</span>
+                    <div>
+                        <div class="fw-semibold">PaymentService xử lý thanh toán</div>
+                        <div class="customer-meta">Có thể hoàn tất hoặc tạo event lỗi để kích hoạt rollback.</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-card">
+                <div class="section-header">
+                    <div>
+                        <p class="section-eyebrow">Scenarios</p>
+                        <h2 class="section-title">Ý nghĩa từng lựa chọn</h2>
+                    </div>
+                </div>
+
+                <div class="scenario-option">
+                    <span class="scenario-badge is-success"><i class="bi bi-check2"></i></span>
+                    <div>
+                        <div class="fw-semibold">Happy Case</div>
+                        <div class="customer-meta">Ép hệ thống đi hết luồng thành công để ra trạng thái Completed.</div>
+                    </div>
+                </div>
+                <div class="scenario-option">
+                    <span class="scenario-badge is-danger"><i class="bi bi-arrow-counterclockwise"></i></span>
+                    <div>
+                        <div class="fw-semibold">Rollback Case</div>
+                        <div class="customer-meta">Ép PaymentService trả lỗi để kích hoạt huỷ đơn và bù trừ tồn kho.</div>
+                    </div>
+                </div>
+                <div class="scenario-option">
+                    <span class="scenario-badge is-warning"><i class="bi bi-shuffle"></i></span>
+                    <div>
+                        <div class="fw-semibold">Random</div>
+                        <div class="customer-meta">Phù hợp khi bạn muốn demo nhiều đơn để quan sát tỉ lệ thành công và thất bại.</div>
+                    </div>
+                </div>
+            </section>
         </div>
     </div>
 </div>

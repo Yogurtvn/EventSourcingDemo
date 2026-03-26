@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net.Http.Json;
+using WebFrontend.Models;
 
 namespace WebFrontend.Pages;
 
@@ -14,36 +15,59 @@ public class OrderListModel(IHttpClientFactory httpClientFactory) : PageModel
 
         try
         {
-            using var response = await client.GetAsync("/orders/recent?take=50");
-            if (response.IsSuccessStatusCode)
+            using var ordersResponse = await client.GetAsync("/orders/recent?take=50");
+            if (!ordersResponse.IsSuccessStatusCode)
             {
-                Orders = await response.Content.ReadFromJsonAsync<List<OrderListItemDto>>() ?? new();
+                ErrorMessage = $"API danh sách đơn hàng trả về {ordersResponse.StatusCode}.";
                 return;
             }
 
-            ErrorMessage = $"Order list API returned {response.StatusCode}.";
+            Orders = await ordersResponse.Content.ReadFromJsonAsync<List<OrderListItemDto>>() ?? new();
+
+            using var customersResponse = await client.GetAsync("/orders/customers");
+            if (!customersResponse.IsSuccessStatusCode)
+            {
+                return;
+            }
+
+            var customers = await customersResponse.Content.ReadFromJsonAsync<List<CustomerCatalogItemDto>>() ?? new();
+            var customerLookup = customers.ToDictionary(x => x.CustomerId, x => x.FullName, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var order in Orders)
+            {
+                if (customerLookup.TryGetValue(order.CustomerId, out var fullName) &&
+                    !string.IsNullOrWhiteSpace(fullName))
+                {
+                    order.CustomerName = fullName;
+                }
+            }
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"Could not load orders. Error: {ex.Message}";
+            ErrorMessage = $"Không thể tải danh sách đơn hàng. Lỗi: {ex.Message}";
         }
     }
 
-    public static string GetStatusBadgeClass(string? status) => status switch
+    public static string GetStatusClass(string? status) => status switch
     {
-        "Completed" => "bg-success",
-        "Cancelled" => "bg-danger",
-        "PaymentFailed" => "bg-danger",
-        "InventoryFailed" => "bg-danger",
-        "PaymentSucceeded" => "bg-info text-dark",
-        "Created" => "bg-warning text-dark",
-        _ => "bg-secondary"
+        "Completed" => "is-success",
+        "Cancelled" => "is-danger",
+        "PaymentFailed" => "is-danger",
+        "InventoryFailed" => "is-danger",
+        "PaymentSucceeded" => "is-info",
+        "Created" => "is-warning",
+        _ => "is-neutral"
     };
 
     public static string GetDisplayStatus(string? status) => status switch
     {
-        "Created" => "Pending",
-        _ when string.IsNullOrWhiteSpace(status) => "Unknown",
+        "Created" => "Đang xử lý",
+        "Completed" => "Hoàn tất",
+        "Cancelled" => "Đã huỷ",
+        "PaymentFailed" => "Thanh toán lỗi",
+        "InventoryFailed" => "Giữ hàng lỗi",
+        "PaymentSucceeded" => "Đã thanh toán",
+        _ when string.IsNullOrWhiteSpace(status) => "Không rõ",
         _ => status
     };
 }
@@ -52,7 +76,12 @@ public sealed class OrderListItemDto
 {
     public Guid OrderId { get; set; }
     public string CustomerId { get; set; } = string.Empty;
+    public string? CustomerName { get; set; }
     public decimal TotalAmount { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTime LastUpdatedAt { get; set; }
+
+    public string DisplayCustomerName => string.IsNullOrWhiteSpace(CustomerName)
+        ? CustomerId
+        : CustomerName;
 }

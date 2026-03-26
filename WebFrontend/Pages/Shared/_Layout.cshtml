@@ -2,65 +2,75 @@
     var currentPage = ViewContext.RouteData.Values["page"] as string ?? string.Empty;
 }
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Saga Dashboard</title>
+    <title>@ViewData["Title"] - Saga Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-
-    <style>
-        body { min-height: 100vh; min-height: -webkit-fill-available; }
-        html { height: -webkit-fill-available; }
-        main { display: flex; flex-wrap: nowrap; height: 100vh; height: -webkit-fill-available; max-height: 100vh; overflow-x: auto; overflow-y: hidden; }
-        .nav-flush .nav-link { border-radius: 0; }
-        .nav-link:hover { background-color: #f8f9fa; }
-        .nav-link.active { background-color: #0d6efd; color: white !important; }
-        .content-area { padding: 2rem; overflow-y: auto; width: 100%; background-color: #f8f9fa; }
-    </style>
 </head>
 <body>
-    <main>
-        <div class="d-flex flex-column flex-shrink-0 p-3 bg-white border-end" style="width: 280px;">
-            <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-dark text-decoration-none">
-                <i class="bi bi-cpu fs-3 me-2 text-primary"></i>
-                <span class="fs-4 fw-bold">Saga Admin</span>
-            </a>
-            <hr>
-            <ul class="nav nav-pills flex-column mb-auto">
-                <li class="nav-item">
-                    <a asp-page="/Index" class="nav-link link-dark @(currentPage == "/Index" ? "active" : "")">
-                        <i class="bi bi-speedometer2 me-2"></i> Dashboard (CQRS)
-                    </a>
-                </li>
-                <li>
-                    <a asp-page="/OrderSimulator" class="nav-link link-dark @(currentPage == "/OrderSimulator" ? "active" : "")">
-                        <i class="bi bi-cart-plus me-2"></i> Tao Don Hang (Saga)
-                    </a>
-                </li>
-                <li>
-                    <a asp-page="/OrderList" class="nav-link link-dark @(currentPage == "/OrderList" ? "active" : "")">
-                        <i class="bi bi-list-ul me-2"></i> Quan Ly Don Hang
-                    </a>
-                </li>
-            </ul>
-            <hr>
-            <div>
-                <span class="d-flex align-items-center link-dark text-decoration-none">
-                    <img src="https://github.com/mdo.png" alt="" width="32" height="32" class="rounded-circle me-2">
-                    <strong>Admin User</strong>
+    <div class="app-shell">
+        <aside class="app-sidebar">
+            <a asp-page="/Index" class="brand-link text-decoration-none">
+                <span class="brand-mark">
+                    <i class="bi bi-cpu"></i>
                 </span>
-            </div>
-        </div>
+                <span>
+                    <span class="brand-eyebrow">Event Sourcing Demo</span>
+                    <span class="brand-title">Saga Admin</span>
+                </span>
+            </a>
 
-        <div class="content-area">
-            <div class="container-fluid">
+            <div class="sidebar-card">
+                <p class="sidebar-kicker">Bảng điều khiển demo</p>
+                <p class="sidebar-copy">
+                    Theo dõi luồng Saga, CQRS và Event Sourcing từ một giao diện duy nhất.
+                </p>
+                <div class="sidebar-tags">
+                    <span>RabbitMQ</span>
+                    <span>Read Model</span>
+                    <span>Timeline</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a asp-page="/Index" class="sidebar-nav-link @(currentPage == "/Index" ? "active" : "")">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Dashboard CQRS</span>
+                </a>
+                <a asp-page="/OrderSimulator" class="sidebar-nav-link @(currentPage == "/OrderSimulator" ? "active" : "")">
+                    <i class="bi bi-cart-plus"></i>
+                    <span>Tạo đơn hàng</span>
+                </a>
+                <a asp-page="/OrderList" class="sidebar-nav-link @(currentPage == "/OrderList" ? "active" : "")">
+                    <i class="bi bi-list-check"></i>
+                    <span>Quản lý đơn hàng</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-chip">
+                    <span class="user-avatar">AD</span>
+                    <div>
+                        <div class="user-name">Admin User</div>
+                        <div class="user-role">Demo Operator</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="app-main">
+            <div class="page-shell">
                 @RenderBody()
             </div>
-        </div>
-    </main>
+        </main>
+    </div>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>

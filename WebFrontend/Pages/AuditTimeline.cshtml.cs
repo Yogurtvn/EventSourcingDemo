@@ -17,7 +17,7 @@ public class AuditTimelineModel(IHttpClientFactory httpClientFactory) : PageMode
     {
         if (OrderId == Guid.Empty)
         {
-            ErrorMessage = "OrderId is required.";
+            ErrorMessage = "Cần truyền OrderId hợp lệ để xem timeline.";
             return;
         }
 
@@ -41,7 +41,7 @@ public class AuditTimelineModel(IHttpClientFactory httpClientFactory) : PageMode
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"Could not load timeline. Error: {ex.Message}";
+            ErrorMessage = $"Không thể tải timeline. Lỗi: {ex.Message}";
         }
     }
 
@@ -87,37 +87,37 @@ public class AuditTimelineModel(IHttpClientFactory httpClientFactory) : PageMode
 
                 if (property.NameEquals("customerId"))
                 {
-                    parts.Add($"Customer: {property.Value}");
+                    parts.Add($"Khách hàng: {property.Value}");
                     continue;
                 }
 
                 if (property.NameEquals("totalAmount") || property.NameEquals("amount"))
                 {
-                    parts.Add($"Amount: {property.Value}");
+                    parts.Add($"Số tiền: {property.Value}");
                     continue;
                 }
 
                 if (property.NameEquals("reason"))
                 {
-                    parts.Add($"Reason: {property.Value}");
+                    parts.Add($"Lý do: {property.Value}");
                     continue;
                 }
 
                 if (property.NameEquals("paymentId"))
                 {
-                    parts.Add($"PaymentId: {property.Value}");
+                    parts.Add($"Mã thanh toán: {property.Value}");
                     continue;
                 }
 
                 if (property.NameEquals("reservedUntil"))
                 {
-                    parts.Add($"ReservedUntil: {property.Value}");
+                    parts.Add($"Giữ đến: {property.Value}");
                     continue;
                 }
 
                 if (property.NameEquals("testScenario") && property.Value.ValueKind != JsonValueKind.Null)
                 {
-                    parts.Add($"Scenario: {property.Value}");
+                    parts.Add($"Kịch bản: {property.Value}");
                 }
             }
 
@@ -129,25 +129,47 @@ public class AuditTimelineModel(IHttpClientFactory httpClientFactory) : PageMode
         }
     }
 
-    public static string GetBorderClass(string? eventType) => eventType switch
+    public static string GetSourceLabel(string? source) => source switch
     {
-        "OrderCreated" => "border-primary",
-        "InventoryReserved" => "border-warning",
-        "InventoryReleased" => "border-secondary",
-        "PaymentSucceeded" => "border-success",
-        "PaymentFailed" => "border-danger",
-        "OrderCompleted" => "border-success",
-        "OrderCancelled" => "border-danger",
-        "InventoryFailed" => "border-danger",
-        _ => "border-dark"
+        "Order" => "Order Service",
+        "Inventory" => "Inventory Service",
+        "Payment" => "Payment Service",
+        _ => "Unknown Service"
     };
 
-    public static string GetBadgeClass(string? source) => source switch
+    public static string GetSourceClass(string? source) => source switch
     {
-        "Order" => "bg-primary",
-        "Inventory" => "bg-warning text-dark",
-        "Payment" => "bg-success",
-        _ => "bg-secondary"
+        "Order" => "is-order",
+        "Inventory" => "is-inventory",
+        "Payment" => "is-payment",
+        _ => "is-order"
+    };
+
+    public static string GetEventTitle(string? eventType) => eventType switch
+    {
+        "OrderCreated" => "Đơn hàng được tạo",
+        "InventoryReserved" => "Kho đã giữ hàng",
+        "InventoryReleased" => "Kho đã hoàn hàng",
+        "InventoryFailed" => "Giữ hàng thất bại",
+        "PaymentSucceeded" => "Thanh toán thành công",
+        "PaymentFailed" => "Thanh toán thất bại",
+        "OrderCompleted" => "Đơn hàng hoàn tất",
+        "OrderCancelled" => "Đơn hàng bị huỷ",
+        _ when string.IsNullOrWhiteSpace(eventType) => "Sự kiện không xác định",
+        _ => eventType
+    };
+
+    public static string GetEventIcon(string? eventType) => eventType switch
+    {
+        "OrderCreated" => "bi-plus-circle",
+        "InventoryReserved" => "bi-box-seam",
+        "InventoryReleased" => "bi-arrow-counterclockwise",
+        "InventoryFailed" => "bi-exclamation-diamond",
+        "PaymentSucceeded" => "bi-check-circle",
+        "PaymentFailed" => "bi-x-circle",
+        "OrderCompleted" => "bi-check2-all",
+        "OrderCancelled" => "bi-slash-circle",
+        _ => "bi-dot"
     };
 }
 

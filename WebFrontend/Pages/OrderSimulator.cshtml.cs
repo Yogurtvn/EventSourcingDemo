@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net.Http.Json;
 using System.Text;
@@ -41,16 +41,16 @@ public class OrderSimulatorModel(IHttpClientFactory httpClientFactory) : PageMod
             using var response = await client.PostAsync("/gateway/orders", content);
             if (response.IsSuccessStatusCode)
             {
-                SuccessMessage = "Khoi tao saga thanh cong. Mo trang Quan Ly Don Hang de xem ket qua.";
+                SuccessMessage = "Khởi tạo Saga thành công. Mở trang Quản lý đơn hàng để xem kết quả.";
             }
             else
             {
-                ErrorMessage = $"Gateway/OrderService returned {response.StatusCode}.";
+                ErrorMessage = $"Gateway hoặc OrderService trả về {response.StatusCode}.";
             }
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"Connection error: {ex.Message}";
+            ErrorMessage = $"Lỗi kết nối: {ex.Message}";
         }
 
         await LoadCustomersAsync();
@@ -70,12 +70,12 @@ public class OrderSimulatorModel(IHttpClientFactory httpClientFactory) : PageMod
             }
             else
             {
-                ErrorMessage = $"Could not load customers. Status code: {response.StatusCode}.";
+                ErrorMessage = $"Không thể tải danh sách khách hàng. Mã lỗi: {response.StatusCode}.";
             }
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"Customer API connection error: {ex.Message}";
+            ErrorMessage = $"Lỗi kết nối tới API khách hàng: {ex.Message}";
         }
     }
 }

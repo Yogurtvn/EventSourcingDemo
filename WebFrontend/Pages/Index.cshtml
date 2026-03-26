@@ -1,18 +1,26 @@
 @page
 @model IndexModel
 @{
-    ViewData["Title"] = "CQRS Dashboard";
+    ViewData["Title"] = "Dashboard CQRS";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2><i class="bi bi-bar-chart-line-fill text-primary me-2"></i>Tong quan he thong</h2>
-        <p class="text-muted mb-0">Du lieu duoc doc tu Analytics Read Model.</p>
+<section class="hero-panel mb-4">
+    <div class="d-flex flex-column flex-lg-row justify-content-between gap-4">
+        <div>
+            <p class="hero-eyebrow">Dashboard CQRS</p>
+            <h1>Tổng quan hệ thống</h1>
+            <p class="hero-copy">
+                Dữ liệu trên màn hình này được đọc từ <strong>Read Model</strong> của AnalyticsService,
+                phản ánh kết quả đã được tổng hợp sau khi các event đi qua RabbitMQ.
+            </p>
+        </div>
+        <div class="hero-actions">
+            <a asp-page="/Index" class="btn btn-soft-light">
+                <i class="bi bi-arrow-clockwise me-2"></i>Làm mới
+            </a>
+        </div>
     </div>
-    <a asp-page="/Index" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-clockwise me-1"></i>Lam moi
-    </a>
-</div>
+</section>
 
 @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
 {
@@ -22,112 +30,109 @@
 }
 else if (Model.Summary is not null)
 {
-    <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white h-100 shadow-sm border-0">
-                <div class="card-body">
-                    <h6 class="card-title text-uppercase opacity-75">Tong doanh thu</h6>
-                    <h3 class="display-6 fw-bold">@Model.Summary.TotalRevenue.ToString("N0") <small class="fs-6">VNĐ</small></h3>
-                </div>
+    <section class="stat-grid mb-4">
+        <article class="stat-card is-brand">
+            <div class="stat-label">
+                <span>Tổng doanh thu</span>
+                <i class="bi bi-cash-coin"></i>
             </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white h-100 shadow-sm border-0">
-                <div class="card-body">
-                    <h6 class="card-title text-uppercase opacity-75">Tong so don</h6>
-                    <h3 class="display-6 fw-bold">@Model.Summary.TotalOrders</h3>
-                </div>
+            <h2 class="stat-value">@Model.Summary.TotalRevenue.ToString("N0") <small class="fs-6">VNĐ</small></h2>
+            <div class="stat-meta">Giá trị đơn trung bình: @Model.Summary.AverageOrderValue.ToString("N0") VNĐ</div>
+        </article>
+        <article class="stat-card is-sky">
+            <div class="stat-label">
+                <span>Tổng đơn hàng</span>
+                <i class="bi bi-box-seam"></i>
             </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white h-100 shadow-sm border-0">
-                <div class="card-body">
-                    <h6 class="card-title text-uppercase opacity-75">Don thanh cong</h6>
-                    <h3 class="display-6 fw-bold">@Model.Summary.CompletedOrders</h3>
-                    <div class="progress mt-2" style="height: 5px;">
-                        <div class="progress-bar bg-white" style="width: @(Model.Summary.SuccessRate)%"></div>
-                    </div>
-                    <small class="opacity-75">Ty le thanh cong: @Model.Summary.SuccessRate%</small>
-                </div>
+            <h2 class="stat-value">@Model.Summary.TotalOrders</h2>
+            <div class="stat-meta">Khách hàng hoạt động: @Model.Summary.TotalCustomers</div>
+        </article>
+        <article class="stat-card is-success">
+            <div class="stat-label">
+                <span>Đơn thành công</span>
+                <i class="bi bi-check2-circle"></i>
             </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-danger text-white h-100 shadow-sm border-0">
-                <div class="card-body">
-                    <h6 class="card-title text-uppercase opacity-75">Don huy/rollback</h6>
-                    <h3 class="display-6 fw-bold">@Model.Summary.CancelledOrders</h3>
-                </div>
+            <h2 class="stat-value">@Model.Summary.CompletedOrders</h2>
+            <div class="stat-meta">Tỷ lệ thành công: @Model.Summary.SuccessRate%</div>
+        </article>
+        <article class="stat-card is-danger">
+            <div class="stat-label">
+                <span>Đơn huỷ / rollback</span>
+                <i class="bi bi-arrow-counterclockwise"></i>
             </div>
-        </div>
-    </div>
+            <h2 class="stat-value">@Model.Summary.CancelledOrders</h2>
+            <div class="stat-meta">Đơn đang chờ xử lý: @Model.Summary.PendingOrders</div>
+        </article>
+    </section>
 
-    <div class="row g-3 mb-4">
-        <div class="col-md-6">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-body">
-                    <h6 class="text-uppercase text-muted">Khach hang</h6>
-                    <h4 class="mb-0">@Model.Summary.TotalCustomers</h4>
-                </div>
+    <section class="section-card">
+        <div class="section-header">
+            <div>
+                <p class="section-eyebrow">Top Spenders</p>
+                <h2 class="section-title">Khách hàng chi tiêu cao nhất</h2>
+                <p class="section-copy">Danh sách này lấy từ AnalyticsService và được làm giàu thêm tên khách hàng từ OrderService.</p>
+            </div>
+            <div class="metric-chip-row">
+                <span class="metric-chip"><i class="bi bi-people"></i>@Model.Summary.TotalCustomers khách hàng</span>
+                <span class="metric-chip"><i class="bi bi-graph-up-arrow"></i>@Model.Summary.TotalOrders đơn đã ghi nhận</span>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-body">
-                    <h6 class="text-uppercase text-muted">Gia tri don trung binh</h6>
-                    <h4 class="mb-0">@Model.Summary.AverageOrderValue.ToString("N0") VNĐ</h4>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-white py-3">
-            <h5 class="mb-0"><i class="bi bi-trophy text-warning me-2"></i>Top 5 khach hang chi tieu cao nhat</h5>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover table-striped mb-0 text-center align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Hang</th>
-                            <th class="text-start">Khach hang</th>
-                            <th>So don</th>
-                            <th class="text-end pe-4">Tong chi tieu</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model.TopSpenders.Any())
-                        {
-                            var rank = 1;
-                            foreach (var spender in Model.TopSpenders)
-                            {
-                                <tr>
-                                    <td><span class="badge bg-dark rounded-circle p-2">@rank</span></td>
-                                    <td class="text-start fw-semibold">
-                                        <i class="bi bi-person-circle text-secondary me-2"></i>@spender.CustomerId
-                                    </td>
-                                    <td>@spender.TotalOrders</td>
-                                    <td class="text-end pe-4 fw-bold text-success">@spender.TotalSpent.ToString("N0") VNĐ</td>
-                                </tr>
-                                rank++;
-                            }
-                        }
-                        else
+        <div class="table-responsive">
+            <table class="table table-modern align-middle">
+                <thead>
+                    <tr>
+                        <th>Hạng</th>
+                        <th>Khách hàng</th>
+                        <th>Số đơn</th>
+                        <th class="text-end">Tổng chi tiêu</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.TopSpenders.Any())
+                    {
+                        var rank = 1;
+                        foreach (var spender in Model.TopSpenders)
                         {
                             <tr>
-                                <td colspan="4" class="text-muted py-4">Chua co du lieu giao dich nao.</td>
+                                <td><span class="rank-badge">@rank</span></td>
+                                <td>
+                                    <div class="customer-block">
+                                        <span class="customer-name">@spender.DisplayCustomerName</span>
+                                        @if (!string.Equals(spender.DisplayCustomerName, spender.CustomerId, StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            <span class="customer-meta">@spender.CustomerId</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td>@spender.TotalOrders</td>
+                                <td class="text-end fw-semibold">@spender.TotalSpent.ToString("N0") VNĐ</td>
                             </tr>
+                            rank++;
                         }
-                    </tbody>
-                </table>
-            </div>
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="4">
+                                <div class="empty-state">
+                                    <i class="bi bi-bar-chart"></i>
+                                    <div>Chưa có dữ liệu giao dịch để hiển thị.</div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
-    </div>
+    </section>
 }
 else
 {
-    <div class="text-center py-5">
-        <div class="spinner-border text-primary" role="status"></div>
-        <p class="mt-2 text-muted">Dang tai du lieu tu Read Model...</p>
+    <div class="section-card">
+        <div class="empty-state">
+            <div class="spinner-border text-primary mb-3" role="status"></div>
+            <div>Đang tải dữ liệu từ Analytics Read Model...</div>
+        </div>
     </div>
 }

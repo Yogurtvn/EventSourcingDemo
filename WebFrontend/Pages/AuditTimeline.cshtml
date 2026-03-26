@@ -1,18 +1,25 @@
 @page
 @model WebFrontend.Pages.AuditTimelineModel
 @{
-    ViewData["Title"] = "Audit Timeline";
+    ViewData["Title"] = "Nhật ký sự kiện";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2><i class="bi bi-clock-history text-primary me-2"></i>Audit Log / Event Timeline</h2>
-        <p class="text-muted mb-0">Tong hop dau vet cua Order, Inventory va Payment cho don hang @Model.OrderId</p>
+<section class="hero-panel mb-4">
+    <div class="d-flex flex-column flex-lg-row justify-content-between gap-4">
+        <div>
+            <p class="hero-eyebrow">Audit Log</p>
+            <h1>Dòng thời gian sự kiện</h1>
+            <p class="hero-copy">
+                Toàn bộ dấu vết của <strong>@Model.OrderId</strong> được hợp nhất từ OrderService, InventoryService và PaymentService để giải thích chính xác chuyện gì đã xảy ra.
+            </p>
+        </div>
+        <div class="hero-actions">
+            <a asp-page="/OrderList" class="btn btn-soft-light">
+                <i class="bi bi-arrow-left me-2"></i>Quay lại danh sách
+            </a>
+        </div>
     </div>
-    <a asp-page="/OrderList" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i>Quay lai danh sach
-    </a>
-</div>
+</section>
 
 @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
 {
@@ -22,36 +29,49 @@
 }
 else
 {
-    <div class="d-grid gap-3">
-        @if (Model.TimelineItems.Count == 0)
-        {
-            <div class="alert alert-warning mb-0">Khong tim thay event nao cho don hang nay.</div>
-        }
-        else
-        {
-            foreach (var item in Model.TimelineItems)
+    <section class="section-card">
+        <div class="section-header">
+            <div>
+                <p class="section-eyebrow">Timeline</p>
+                <h2 class="section-title">Dấu vết kiểm toán theo thời gian</h2>
+                <p class="section-copy">Mỗi mốc là một event thật đã được lưu vào Event Store của từng service.</p>
+            </div>
+        </div>
+
+        <div class="timeline-stack">
+            @if (Model.TimelineItems.Count == 0)
             {
-                <div class="card shadow-sm border-start border-4 @AuditTimelineModel.GetBorderClass(item.EventType)">
-                    <div class="card-body">
+                <div class="empty-state">
+                    <i class="bi bi-clock-history"></i>
+                    <div>Không tìm thấy event nào cho đơn hàng này.</div>
+                </div>
+            }
+            else
+            {
+                foreach (var item in Model.TimelineItems)
+                {
+                    <article class="timeline-card @AuditTimelineModel.GetSourceClass(item.Source)">
                         <div class="d-flex justify-content-between align-items-start gap-3">
                             <div>
-                                <div class="d-flex align-items-center gap-2 mb-2">
-                                    <span class="badge @AuditTimelineModel.GetBadgeClass(item.Source)">@item.Source</span>
-                                    <strong>@item.EventType</strong>
-                                    <span class="text-muted">v@item.Version</span>
+                                <div class="timeline-title">
+                                    <span class="timeline-source">
+                                        <i class="bi @AuditTimelineModel.GetEventIcon(item.EventType)"></i>
+                                        @AuditTimelineModel.GetSourceLabel(item.Source)
+                                    </span>
+                                    <span>@AuditTimelineModel.GetEventTitle(item.EventType)</span>
                                 </div>
                                 @if (!string.IsNullOrWhiteSpace(item.Details))
                                 {
-                                    <div class="text-muted">@item.Details</div>
+                                    <div class="timeline-meta">@item.Details</div>
                                 }
                             </div>
-                            <div class="text-nowrap text-muted small">
+                            <div class="timeline-time">
                                 @item.Timestamp.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")
                             </div>
                         </div>
-                    </div>
-                </div>
+                    </article>
+                }
             }
-        }
-    </div>
+        </div>
+    </section>
 }

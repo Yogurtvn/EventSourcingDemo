@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net.Http.Json;
+using WebFrontend.Models;
 
 namespace WebFrontend.Pages;
 
@@ -11,33 +12,50 @@ public class IndexModel(IHttpClientFactory httpClientFactory) : PageModel
 
     public async Task OnGetAsync()
     {
-        var client = httpClientFactory.CreateClient("AnalyticsClient");
+        var analyticsClient = httpClientFactory.CreateClient("AnalyticsClient");
+        var gatewayClient = httpClientFactory.CreateClient("GatewayClient");
 
         try
         {
-            using var summaryResponse = await client.GetAsync("/api/AnalyticsDashboard/summary");
+            using var summaryResponse = await analyticsClient.GetAsync("/api/AnalyticsDashboard/summary");
             if (summaryResponse.IsSuccessStatusCode)
             {
                 Summary = await summaryResponse.Content.ReadFromJsonAsync<DashboardSummaryDto>();
             }
             else
             {
-                ErrorMessage += $"Dashboard API returned {summaryResponse.StatusCode}. ";
+                ErrorMessage += $"API dashboard trả về {summaryResponse.StatusCode}. ";
             }
 
-            using var topSpendersResponse = await client.GetAsync("/api/AnalyticsDashboard/customers/top-spenders?take=5");
+            using var topSpendersResponse = await analyticsClient.GetAsync("/api/AnalyticsDashboard/customers/top-spenders?take=5");
             if (topSpendersResponse.IsSuccessStatusCode)
             {
                 TopSpenders = await topSpendersResponse.Content.ReadFromJsonAsync<List<TopSpenderDto>>() ?? new();
             }
             else
             {
-                ErrorMessage += $"Top spenders API returned {topSpendersResponse.StatusCode}. ";
+                ErrorMessage += $"API top spender trả về {topSpendersResponse.StatusCode}. ";
+            }
+
+            using var customersResponse = await gatewayClient.GetAsync("/orders/customers");
+            if (customersResponse.IsSuccessStatusCode)
+            {
+                var customers = await customersResponse.Content.ReadFromJsonAsync<List<CustomerCatalogItemDto>>() ?? new();
+                var customerLookup = customers.ToDictionary(x => x.CustomerId, x => x.FullName, StringComparer.OrdinalIgnoreCase);
+
+                foreach (var spender in TopSpenders)
+                {
+                    if (customerLookup.TryGetValue(spender.CustomerId, out var fullName) &&
+                        !string.IsNullOrWhiteSpace(fullName))
+                    {
+                        spender.CustomerName = fullName;
+                    }
+                }
             }
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"Could not connect to AnalyticsService. Error: {ex.Message}";
+            ErrorMessage = $"Không thể kết nối tới AnalyticsService. Lỗi: {ex.Message}";
         }
     }
 }
@@ -62,4 +80,9 @@ public class TopSpenderDto
     public string CustomerId { get; set; } = string.Empty;
     public int TotalOrders { get; set; }
     public decimal TotalSpent { get; set; }
+    public string? CustomerName { get; set; }
+
+    public string DisplayCustomerName => string.IsNullOrWhiteSpace(CustomerName)
+        ? CustomerId
+        : CustomerName;
 }
