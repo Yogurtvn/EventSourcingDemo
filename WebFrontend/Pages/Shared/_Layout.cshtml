@@ -1,0 +1,69 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Saga Dashboard</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <style>
+        /* CSS tuỳ chỉnh cho Sidebar */
+        body { min-height: 100vh; min-height: -webkit-fill-available; }
+        html { height: -webkit-fill-available; }
+        main { display: flex; flex-wrap: nowrap; height: 100vh; height: -webkit-fill-available; max-height: 100vh; overflow-x: auto; overflow-y: hidden; }
+        .b-example-divider { flex-shrink: 0; width: 1.5rem; height: 100vh; background-color: rgba(0, 0, 0, .1); border: solid rgba(0, 0, 0, .15); border-width: 1px 0; box-shadow: inset 0 .5em 1.5em rgba(0, 0, 0, .1), inset 0 .125em .5em rgba(0, 0, 0, .15); }
+        .nav-flush .nav-link { border-radius: 0; }
+        .nav-link:hover { background-color: #f8f9fa; }
+        .nav-link.active { background-color: #0d6efd; color: white !important; }
+        .content-area { padding: 2rem; overflow-y: auto; width: 100%; background-color: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <main>
+        <div class="d-flex flex-column flex-shrink-0 p-3 bg-white border-end" style="width: 280px;">
+            <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-dark text-decoration-none">
+                <i class="bi bi-cpu fs-3 me-2 text-primary"></i>
+                <span class="fs-4 fw-bold">Saga Admin</span>
+            </a>
+            <hr>
+            <ul class="nav nav-pills flex-column mb-auto">
+                <li class="nav-item">
+                    <a asp-page="/Index" class="nav-link link-dark @(ViewContext.RouteData.Values["page"].ToString() == "/Index" ? "active" : "")">
+                        <i class="bi bi-speedometer2 me-2"></i> Dashboard (CQRS)
+                    </a>
+                </li>
+                <li>
+                    <a asp-page="/OrderSimulator" class="nav-link link-dark @(ViewContext.RouteData.Values["page"].ToString() == "/OrderSimulator" ? "active" : "")">
+                        <i class="bi bi-cart-plus me-2"></i> Tạo Đơn Hàng (Saga)
+                    </a>
+                </li>
+                <li>
+                    <a asp-page="/OrderList" class="nav-link link-dark @(ViewContext.RouteData.Values["page"].ToString() == "/OrderList" ? "active" : "")">
+                        <i class="bi bi-list-ul me-2"></i> Quản Lý Đơn Hàng
+                    </a>
+                </li>
+            </ul>
+            <hr>
+            <div class="dropdown">
+                <span class="d-flex align-items-center link-dark text-decoration-none">
+                    <img src="https://github.com/mdo.png" alt="" width="32" height="32" class="rounded-circle me-2">
+                    <strong>Admin User</strong>
+                </span>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <div class="container-fluid">
+                @RenderBody()
+            </div>
+        </div>
+    </main>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

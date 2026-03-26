@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NotificationService", "Noti
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnalyticsService", "AnalyticsService\AnalyticsService.csproj", "{3A8D2681-F8AB-4715-8505-66C1E05147E2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebFrontend", "WebFrontend\WebFrontend.csproj", "{3C2F5EED-6C20-4CFC-A911-12D99E5F9331}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -125,8 +127,23 @@ Global
 		{3A8D2681-F8AB-4715-8505-66C1E05147E2}.Release|x64.Build.0 = Release|Any CPU
 		{3A8D2681-F8AB-4715-8505-66C1E05147E2}.Release|x86.ActiveCfg = Release|Any CPU
 		{3A8D2681-F8AB-4715-8505-66C1E05147E2}.Release|x86.Build.0 = Release|Any CPU
+		{3C2F5EED-6C20-4CFC-A911-12D99E5F9331}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C2F5EED-6C20-4CFC-A911-12D99E5F9331}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C2F5EED-6C20-4CFC-A911-12D99E5F9331}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3C2F5EED-6C20-4CFC-A911-12D99E5F9331}.Debug|x64.Build.0 = Debug|Any CPU
+		{3C2F5EED-6C20-4CFC-A911-12D99E5F9331}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3C2F5EED-6C20-4CFC-A911-12D99E5F9331}.Debug|x86.Build.0 = Debug|Any CPU
+		{3C2F5EED-6C20-4CFC-A911-12D99E5F9331}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C2F5EED-6C20-4CFC-A911-12D99E5F9331}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C2F5EED-6C20-4CFC-A911-12D99E5F9331}.Release|x64.ActiveCfg = Release|Any CPU
+		{3C2F5EED-6C20-4CFC-A911-12D99E5F9331}.Release|x64.Build.0 = Release|Any CPU
+		{3C2F5EED-6C20-4CFC-A911-12D99E5F9331}.Release|x86.ActiveCfg = Release|Any CPU
+		{3C2F5EED-6C20-4CFC-A911-12D99E5F9331}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0EEE9726-019E-4095-BBFF-75AD9A708828}
 	EndGlobalSection
 EndGlobal

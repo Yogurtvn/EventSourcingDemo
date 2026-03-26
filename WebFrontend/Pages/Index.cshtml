@@ -1,0 +1,108 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "CQRS Dashboard";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-bar-chart-line-fill text-primary me-2"></i> Tổng quan Hệ thống (Read Model)</h2>
+    <a href="/" class="btn btn-outline-secondary"><i class="bi bi-arrow-clockwise"></i> Làm mới</a>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">
+        <i class="bi bi-exclamation-triangle-fill"></i> @Model.ErrorMessage
+    </div>
+}
+else if (Model.Summary != null)
+{
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white h-100 shadow-sm border-0">
+                <div class="card-body">
+                    <h6 class="card-title text-uppercase opacity-75">TỔNG DOANH THU</h6>
+                    <h3 class="display-6 fw-bold">@Model.Summary.TotalRevenue.ToString("N0") <small class="fs-6">VNĐ</small></h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white h-100 shadow-sm border-0">
+                <div class="card-body">
+                    <h6 class="card-title text-uppercase opacity-75">TỔNG SỐ ĐƠN HÀNG</h6>
+                    <h3 class="display-6 fw-bold">@Model.Summary.TotalOrders</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white h-100 shadow-sm border-0">
+                <div class="card-body">
+                    <h6 class="card-title text-uppercase opacity-75">ĐƠN THÀNH CÔNG (HAPPY)</h6>
+                    <h3 class="display-6 fw-bold">@Model.Summary.SuccessfulOrders</h3>
+                    <div class="progress mt-2" style="height: 5px;">
+                        <div class="progress-bar bg-white" style="width: @(Model.Summary.SuccessRate)%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white h-100 shadow-sm border-0">
+                <div class="card-body">
+                    <h6 class="card-title text-uppercase opacity-75">ĐƠN HỦY/LỖI (ROLLBACK)</h6>
+                    <h3 class="display-6 fw-bold">@Model.Summary.FailedOrders</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0"><i class="bi bi-trophy text-warning me-2"></i>Top 5 Khách hàng chi tiêu cao nhất</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0 text-center align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Hạng</th>
+                            <th class="text-start">Khách hàng</th>
+                            <th>Số đơn đã mua</th>
+                            <th class="text-end pe-4">Tổng tiền chi tiêu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.TopSpenders.Any())
+                        {
+                            var rank = 1;
+                            foreach (var spender in Model.TopSpenders)
+                            {
+                                <tr>
+                                    <td><span class="badge bg-dark rounded-circle p-2">@rank</span></td>
+                                    <td class="text-start fw-semibold">
+                                        <i class="bi bi-person-circle text-secondary me-2"></i> @spender.CustomerName
+                                    </td>
+                                    <td>@spender.OrderCount</td>
+                                    <td class="text-end pe-4 fw-bold text-success">@spender.TotalSpent.ToString("N0") VNĐ</td>
+                                </tr>
+                                rank++;
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="4" class="text-muted py-4">Chưa có dữ liệu giao dịch nào.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2 text-muted">Đang tải dữ liệu từ Read Model...</p>
+    </div>
+}
